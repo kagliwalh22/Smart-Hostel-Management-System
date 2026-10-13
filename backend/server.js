@@ -2,12 +2,24 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const db = require('./db');
+const authRoutes = require('./routes/auth');
+const { verifyToken, requireRole } = require('./middleware/auth');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 app.get('/', (req, res) => res.send('SHMS backend is running'));
+
+app.use('/api/auth', authRoutes);
+
+app.get('/api/me', verifyToken, (req, res) => res.json(req.user));
+app.get('/api/warden/test', verifyToken, requireRole('Warden'), (req, res) =>
+    res.json({ message: 'Welcome Warden' })
+);
+app.get('/api/admin/test', verifyToken, requireRole('Admin'), (req, res) =>
+    res.json({ message: 'Welcome Admin' })
+);
 
 app.get('/api/rooms', async (req, res) => {
     try {

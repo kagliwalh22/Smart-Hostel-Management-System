@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>SHMS Dashboard</title>
+  <style>
+    body { font-family: Arial; margin: 0; background: #eef2f7; }
+    header { background: #1565c0; color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; }
+    .menu { padding: 25px; }
+    .card { background: white; padding: 15px; margin: 10px 0; border-radius: 8px; box-shadow: 0 1px 5px rgba(0,0,0,0.15); }
+    button { padding: 6px 14px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <header>
+    <div id="title"></div>
+    <button onclick="logout()">Logout</button>
+  </header>
+  <div class="menu" id="menu"></div>
+  <script>
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!token || !user) window.location.href = 'login.html';
+
+    document.getElementById('title').innerText = user.name + ' (' + user.role + ')';
+
+    const menus = {
+      Student: ['Apply for Hostel', 'My Room', 'Raise Complaint', 'Request Out-Pass', 'Request Room Migration', 'My Profile', 'My Attendance'],
+      Warden: ['Allocate Rooms', 'Approve Migration', 'Mark Attendance', 'Approve Out-Pass', 'Visitor Log', 'Manage Complaints'],
+      Admin: ['Update Fee Status', 'Generate Reports', 'Master Data']
+    };
+    document.getElementById('menu').innerHTML =
+      '<h2>' + user.role + ' Dashboard</h2>' +
+      menus[user.role].map(m => '<div class="card">' + m + '</div>').join('');
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = 'login.html';
+    }
+  </script>
+</body>
+</html>
