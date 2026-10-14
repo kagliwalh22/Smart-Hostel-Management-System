@@ -3,6 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 const db = require('./db');
 const authRoutes = require('./routes/auth');
+const studentRoutes = require('./routes/student');
 const { verifyToken, requireRole } = require('./middleware/auth');
 
 const app = express();
@@ -12,24 +13,25 @@ app.use(express.json());
 app.get('/', (req, res) => res.send('SHMS backend is running'));
 
 app.use('/api/auth', authRoutes);
+app.use('/api', studentRoutes);
 
 app.get('/api/me', verifyToken, (req, res) => res.json(req.user));
 app.get('/api/warden/test', verifyToken, requireRole('Warden'), (req, res) =>
-    res.json({ message: 'Welcome Warden' })
+  res.json({ message: 'Welcome Warden' })
 );
 app.get('/api/admin/test', verifyToken, requireRole('Admin'), (req, res) =>
-    res.json({ message: 'Welcome Admin' })
+  res.json({ message: 'Welcome Admin' })
 );
 
 app.get('/api/rooms', async (req, res) => {
-    try {
-        const [rows] = await db.query('SELECT * FROM rooms');
-        res.json(rows);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+  try {
+    const [rows] = await db.query('SELECT * FROM rooms');
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.listen(process.env.PORT, () =>
-    console.log('Server running on port ' + process.env.PORT)
+  console.log('Server running on port ' + process.env.PORT)
 );

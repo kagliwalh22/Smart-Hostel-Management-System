@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>SHMS Profile</title>
+  <style>
+    body { font-family: Arial; margin: 0; background: #eef2f7; }
+    header { background: #1565c0; color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; }
+    header a { color: white; }
+    .box { background: white; margin: 25px auto; padding: 25px; border-radius: 10px; width: 340px; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+    label { display: block; margin-top: 12px; font-size: 13px; color: #555; }
+    input, button { width: 100%; padding: 10px; margin-top: 4px; box-sizing: border-box; }
+    input[readonly] { background: #eee; }
+    button { background: #1565c0; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 18px; }
+    #msg { margin-top: 10px; } .err { color: red; } .ok { color: green; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>My Profile</div>
+    <a href="dashboard.html">Back to Dashboard</a>
+  </header>
+  <div class="box">
+    <label>Role</label><input id="role" readonly>
+    <label>Email</label><input id="email" readonly>
+    <div id="studentOnly">
+      <label>Student ID</label><input id="student_id" readonly>
+    </div>
+    <label>Name</label><input id="name">
+    <div id="phones">
+      <label>Phone</label><input id="phone">
+      <label>Emergency phone</label><input id="emergency_phone">
+    </div>
+    <button onclick="saveProfile()">Save changes</button>
+    <div id="msg"></div>
+  </div>
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = 'login.html';
+    const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+    const msg = document.getElementById('msg');
+    let role = '';
+
+    async function loadProfile() {
+      const res = await fetch('http://localhost:5000/api/profile', { headers });
+      if (res.status === 401) { localStorage.clear(); window.location.href = 'login.html'; return; }
+      const p = await res.json();
+      role = p.role;
+      ['role','email','name'].forEach(k => document.getElementById(k).value = p[k] || '');
+      if (role === 'Student') {
+        ['student_id','phone','emergency_phone'].forEach(k => document.getElementById(k).value = p[k] || '');
+      } else {
+        document.getElementById('studentOnly').style.display = 'none';
+        document.getElementById('phones').style.display = 'none';
+      }
+    }
+
+    async function saveProfile() {
+      const body = { name: document.getElementById('name').value.trim() };
+      if (role === 'Student') {
+        body.phone = document.getElementById('phone').value.trim();
+        body.emergency_phone = document.getElementById('emergency_phone').value.trim();
+      }
+      const res = await fetch('http://localhost:5000/api/profile', { method: 'PUT', headers, body: JSON.stringify(body) });
+      const data = await res.json();
+      msg.className = res.ok ? 'ok' : 'err';
+      msg.innerText = res.ok ? 'Profile updated' : data.error;
+      if (res.ok) {
+        const u = JSON.parse(localStorage.getItem('user'));
+        u.name = body.name;
+        localStorage.setItem('user', JSON.stringify(u));
+      }
+    }
+    loadProfile();
+  </script>
+</body>
+</html>
