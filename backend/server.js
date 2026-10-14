@@ -5,6 +5,8 @@ const db = require('./db');
 const authRoutes = require('./routes/auth');
 const studentRoutes = require('./routes/student');
 const applicationRoutes = require('./routes/application');
+const allocationRoutes = require('./routes/allocation');
+const migrationRoutes = require('./routes/migration');
 const { verifyToken, requireRole } = require('./middleware/auth');
 
 const app = express();
@@ -15,6 +17,8 @@ app.get('/', (req, res) => res.send('SHMS backend is running'));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/applications', applicationRoutes);
+app.use('/api/allocations', allocationRoutes);
+app.use('/api/migrations', migrationRoutes);
 app.use('/api', studentRoutes);
 
 app.get('/api/me', verifyToken, (req, res) => res.json(req.user));

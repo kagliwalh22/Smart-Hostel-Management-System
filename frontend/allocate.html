@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>SHMS Room Allocation</title>
+  <style>
+    body { font-family: Arial; margin: 0; background: #eef2f7; }
+    header { background: #1565c0; color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; }
+    header a { color: white; }
+    .box { background: white; margin: 20px auto; padding: 20px; border-radius: 10px; max-width: 760px; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; }
+    select, button { padding: 6px 10px; }
+    button { background: #1565c0; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    #msg { margin: 10px auto; max-width: 760px; padding: 0 20px; } .err { color: red; } .ok { color: green; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>Allocation Management</div>
+    <a href="dashboard.html">Back to Dashboard</a>
+  </header>
+  <div id="msg"></div>
+  <div class="box">
+    <h3>Room capacity matrix</h3>
+    <table id="matrix"></table>
+  </div>
+  <div class="box">
+    <h3>Pending applications</h3>
+    <table id="pending"></table>
+  </div>
+  <script>
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!token || !user || user.role !== 'Warden') window.location.href = 'login.html';
+    const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+    const msg = document.getElementById('msg');
+
+    async function load() {
+      const [rr, pr] = await Promise.all([
+        fetch('http://localhost:5000/api/allocations/rooms', { headers }),
+        fetch('http://localhost:5000/api/allocations/pending', { headers })
+      ]);
+      if (rr.status === 401) { localStorage.clear(); window.location.href = 'login.html'; return; }
+      const rooms = await rr.json();
+      const pending = await pr.json();
+
+      const tiers = {};
+      rooms.forEach(r => {
+        tiers[r.tier] = tiers[r.tier] || { rooms: 0, capacity: 0, occupied: 0 };
+        tiers[r.tier].rooms++; tiers[r.tier].capacity += r.capacity; tiers[r.tier].occupied += r.occupied;
+      });
+      document.getElementById('matrix').innerHTML =
+        '<tr><th>Tier</th><th>Rooms</th><th>Capacity</th><th>Occupied</th><th>Vacant</th></tr>' +
+        Object.keys(tiers).map(t => '<tr><td>' + t + '</td><td>' + tiers[t].rooms + '</td><td>' + tiers[t].capacity +
+          '</td><td>' + tiers[t].occupied + '</td><td>' + (tiers[t].capacity - tiers[t].occupied) + '</td></tr>').join('');
+
+      document.getElementById('pending').innerHTML = pending.length
+        ? '<tr><th>Student</th><th>Year</th><th>Preference</th><th>Room</th><th></th></tr>' +
+          pending.map(a => {
+            const opts = rooms.filter(r => r.tier === a.preference && r.vacancy > 0)
+              .map(r => '<option value="' + r.room_id + '">' + r.room_no + ' (' + r.vacancy + ' vacant)</option>').join('');
+            return '<tr><td>' + a.name + ' (' + a.student_id + ')</td><td>' + a.academic_year + '</td><td>' + a.preference +
+              '</td><td><select id="room' + a.app_id + '">' + (opts || '<option value="">No vacancy</option>') + '</select></td>' +
+              '<td><button onclick="allocate(' + a.app_id + ')">Confirm Allocation</button></td></tr>';
+          }).join('')
+        : '<tr><td>No pending applications</td></tr>';
+    }
+
+    async function allocate(appId) {
+      const room_id = document.getElementById('room' + appId).value;
+      const res = await fetch('http://localhost:5000/api/allocations', {
+        method: 'POST', headers, body: JSON.stringify({ app_id: appId, room_id: Number(room_id) })
+      });
+      const data = await res.json();
+      msg.className = res.ok ? 'ok' : 'err';
+      msg.innerText = res.ok ? data.message : data.error;
+      load();
+    }
+    load();
+  </script>
+</body>
+</html>

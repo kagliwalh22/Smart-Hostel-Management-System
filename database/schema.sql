@@ -110,6 +110,21 @@ CREATE TABLE fee_ledger (
   FOREIGN KEY (student_id) REFERENCES students(student_id)
 );
 
+-- FR-12: room migration requests (BR-6: only after an allocation exists, enforced in backend)
+CREATE TABLE migration_requests (
+  req_id INT AUTO_INCREMENT PRIMARY KEY,
+  student_id VARCHAR(20) NOT NULL,
+  current_room_id INT NOT NULL,
+  preferred_tier ENUM('Single Sitter','Double Sharing','Triple Sharing') NOT NULL,
+  reason VARCHAR(255),
+  status ENUM('Pending','Approved','Rejected') NOT NULL DEFAULT 'Pending',
+  warden_id INT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (student_id) REFERENCES students(student_id),
+  FOREIGN KEY (current_room_id) REFERENCES rooms(room_id),
+  FOREIGN KEY (warden_id) REFERENCES users(user_id)
+);
+
 -- Sample rooms so you can test later
 INSERT INTO rooms (room_no, tier, capacity) VALUES
 ('101','Single Sitter',1),('102','Single Sitter',1),
