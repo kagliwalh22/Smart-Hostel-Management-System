@@ -7,7 +7,8 @@
     body { font-family: Arial; margin: 0; background: #eef2f7; }
     header { background: #1565c0; color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; }
     .menu { padding: 25px; }
-    .card { background: white; padding: 15px; margin: 10px 0; border-radius: 8px; box-shadow: 0 1px 5px rgba(0,0,0,0.15); }
+    .card { display: block; background: white; padding: 15px; margin: 10px 0; border-radius: 8px; box-shadow: 0 1px 5px rgba(0,0,0,0.15); color: #222; text-decoration: none; }
+    a.card { border-left: 4px solid #1565c0; }
     button { padding: 6px 14px; cursor: pointer; }
   </style>
 </head>
@@ -29,9 +30,13 @@
       Warden: ['Allocate Rooms', 'Approve Migration', 'Mark Attendance', 'Approve Out-Pass', 'Visitor Log', 'Manage Complaints'],
       Admin: ['Update Fee Status', 'Generate Reports', 'Master Data']
     };
+    const links = { 'Apply for Hostel': 'apply.html', 'My Profile': 'profile.html' };
+
     document.getElementById('menu').innerHTML =
       '<h2>' + user.role + ' Dashboard</h2>' +
-      menus[user.role].map(m => '<div class="card">' + m + '</div>').join('');
+      menus[user.role].map(m => links[m]
+        ? '<a class="card" href="' + links[m] + '">' + m + '</a>'
+        : '<div class="card">' + m + '</div>').join('');
 
     function logout() {
       localStorage.clear();

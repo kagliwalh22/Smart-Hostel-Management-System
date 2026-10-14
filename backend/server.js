@@ -4,6 +4,7 @@ require('dotenv').config();
 const db = require('./db');
 const authRoutes = require('./routes/auth');
 const studentRoutes = require('./routes/student');
+const applicationRoutes = require('./routes/application');
 const { verifyToken, requireRole } = require('./middleware/auth');
 
 const app = express();
@@ -13,6 +14,7 @@ app.use(express.json());
 app.get('/', (req, res) => res.send('SHMS backend is running'));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/applications', applicationRoutes);
 app.use('/api', studentRoutes);
 
 app.get('/api/me', verifyToken, (req, res) => res.json(req.user));

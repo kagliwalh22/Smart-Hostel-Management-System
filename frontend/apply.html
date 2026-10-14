@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>SHMS Hostel Application</title>
+  <style>
+    body { font-family: Arial; margin: 0; background: #eef2f7; }
+    header { background: #1565c0; color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; }
+    header a { color: white; }
+    .box { background: white; margin: 25px auto; padding: 25px; border-radius: 10px; width: 360px; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+    label { display: block; margin-top: 12px; font-size: 13px; color: #555; }
+    input, select, button { width: 100%; padding: 10px; margin-top: 4px; box-sizing: border-box; }
+    button { background: #1565c0; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 18px; }
+    #msg { margin-top: 10px; } .err { color: red; } .ok { color: green; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+    th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>Hostel Application</div>
+    <a href="dashboard.html">Back to Dashboard</a>
+  </header>
+  <div class="box">
+    <h3>Apply for a room</h3>
+    <label>Academic year</label>
+    <input id="year" value="2026-2027" placeholder="2026-2027">
+    <label>Room preference</label>
+    <select id="pref">
+      <option>Single Sitter</option>
+      <option>Double Sharing</option>
+      <option>Triple Sharing</option>
+    </select>
+    <button onclick="submitApp()">Submit application</button>
+    <div id="msg"></div>
+  </div>
+  <div class="box">
+    <h3>My applications</h3>
+    <table id="list"><tr><td>Loading...</td></tr></table>
+  </div>
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = 'login.html';
+    const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+    const msg = document.getElementById('msg');
+
+    async function loadList() {
+      const res = await fetch('http://localhost:5000/api/applications/mine', { headers });
+      if (res.status === 401) { localStorage.clear(); window.location.href = 'login.html'; return; }
+      const rows = await res.json();
+      if (!res.ok) { document.getElementById('list').innerHTML = '<tr><td>' + rows.error + '</td></tr>'; return; }
+      document.getElementById('list').innerHTML = rows.length
+        ? '<tr><th>Year</th><th>Preference</th><th>Status</th></tr>' +
+          rows.map(r => '<tr><td>' + r.academic_year + '</td><td>' + r.preference + '</td><td>' + r.status + '</td></tr>').join('')
+        : '<tr><td>No applications yet</td></tr>';
+    }
+
+    async function submitApp() {
+      const body = { academic_year: document.getElementById('year').value.trim(), preference: document.getElementById('pref').value };
+      const res = await fetch('http://localhost:5000/api/applications', { method: 'POST', headers, body: JSON.stringify(body) });
+      const data = await res.json();
+      msg.className = res.ok ? 'ok' : 'err';
+      msg.innerText = res.ok ? 'Application submitted' : data.error;
+      if (res.ok) loadList();
+    }
+    loadList();
+  </script>
+</body>
+</html>
