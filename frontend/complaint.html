@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>SHMS Complaint Desk</title>
+  <style>
+    body { font-family: Arial; margin: 0; background: #eef2f7; }
+    header { background: #1565c0; color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; }
+    header a { color: white; }
+    .box { background: white; margin: 25px auto; padding: 25px; border-radius: 10px; max-width: 560px; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+    label { display: block; margin-top: 12px; font-size: 13px; color: #555; }
+    input, select, textarea, button { width: 100%; padding: 10px; margin-top: 4px; box-sizing: border-box; font-family: Arial; }
+    button { background: #1565c0; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 18px; }
+    #msg { margin-top: 10px; } .err { color: red; } .ok { color: green; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; }
+    .Open { color: #c62828; font-weight: bold; } .InProgress { color: #ef6c00; font-weight: bold; } .Resolved { color: #2e7d32; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>Complaint Desk</div>
+    <a href="dashboard.html">Back to Dashboard</a>
+  </header>
+  <div class="box">
+    <h3>Raise a complaint</h3>
+    <label>Category</label>
+    <select id="category">
+      <option>Plumbing</option><option>Electrical</option><option>Cleaning</option>
+      <option>Furniture</option><option>Internet</option><option>Other</option>
+    </select>
+    <label>Title</label><input id="title" placeholder="Short title">
+    <label>Description</label><textarea id="description" rows="3" placeholder="Describe the problem"></textarea>
+    <button onclick="submitComplaint()">Submit complaint</button>
+    <div id="msg"></div>
+  </div>
+  <div class="box">
+    <h3>My complaints</h3>
+    <table id="list"><tr><td>Loading...</td></tr></table>
+  </div>
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = 'login.html';
+    const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+    const msg = document.getElementById('msg');
+
+    async function loadList() {
+      const res = await fetch('http://localhost:5000/api/complaints/mine', { headers });
+      if (res.status === 401) { localStorage.clear(); window.location.href = 'login.html'; return; }
+      const rows = await res.json();
+      document.getElementById('list').innerHTML = rows.length
+        ? '<tr><th>#</th><th>Category</th><th>Title</th><th>Status</th><th>Raised</th><th>Resolved</th></tr>' +
+          rows.map(c => '<tr><td>' + c.complaint_id + '</td><td>' + c.category + '</td><td>' + c.title +
+            '</td><td class="' + c.status.replace(' ', '') + '">' + c.status + '</td><td>' + String(c.created_at).slice(0, 16).replace('T', ' ') +
+            '</td><td>' + (c.resolved_at ? String(c.resolved_at).slice(0, 16).replace('T', ' ') : '-') + '</td></tr>').join('')
+        : '<tr><td>No complaints yet</td></tr>';
+    }
+
+    async function submitComplaint() {
+      const body = {
+        category: document.getElementById('category').value,
+        title: document.getElementById('title').value,
+        description: document.getElementById('description').value
+      };
+      const res = await fetch('http://localhost:5000/api/complaints', { method: 'POST', headers, body: JSON.stringify(body) });
+      const data = await res.json();
+      msg.className = res.ok ? 'ok' : 'err';
+      msg.innerText = res.ok ? data.message : data.error;
+      if (res.ok) { document.getElementById('title').value = ''; document.getElementById('description').value = ''; loadList(); }
+    }
+    loadList();
+  </script>
+</body>
+</html>

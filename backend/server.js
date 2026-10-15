@@ -7,6 +7,7 @@ const studentRoutes = require('./routes/student');
 const applicationRoutes = require('./routes/application');
 const allocationRoutes = require('./routes/allocation');
 const migrationRoutes = require('./routes/migration');
+const complaintRoutes = require('./routes/complaint');
 const { verifyToken, requireRole } = require('./middleware/auth');
 
 const app = express();
@@ -19,6 +20,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/allocations', allocationRoutes);
 app.use('/api/migrations', migrationRoutes);
+app.use('/api/complaints', complaintRoutes);
 app.use('/api', studentRoutes);
 
 app.get('/api/me', verifyToken, (req, res) => res.json(req.user));

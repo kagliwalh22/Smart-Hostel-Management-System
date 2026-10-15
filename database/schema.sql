@@ -56,6 +56,7 @@ CREATE TABLE allocations (
 CREATE TABLE complaints (
   complaint_id INT AUTO_INCREMENT PRIMARY KEY,
   student_id VARCHAR(20) NOT NULL,
+  category VARCHAR(50) NOT NULL DEFAULT 'Other',
   title VARCHAR(150) NOT NULL,
   description TEXT,
   status ENUM('Open','In Progress','Resolved') NOT NULL DEFAULT 'Open',
