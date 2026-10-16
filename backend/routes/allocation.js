@@ -89,7 +89,7 @@ router.post('/', verifyToken, requireRole('Warden'), async (req, res) => {
 router.get('/mine', verifyToken, requireRole('Student'), async (req, res) => {
   try {
     const [rows] = await db.query(
-      `SELECT r.room_no, r.tier, al.allocated_date
+      `SELECT r.room_no, r.tier, DATE_FORMAT(al.allocated_date, '%Y-%m-%d') AS allocated_date
        FROM allocations al
        JOIN students s ON s.student_id = al.student_id
        JOIN rooms r ON r.room_id = al.room_id

@@ -71,9 +71,11 @@ CREATE TABLE outpasses (
   student_id VARCHAR(20) NOT NULL,
   from_date DATE NOT NULL,
   to_date DATE NOT NULL,
+  destination VARCHAR(150) NOT NULL DEFAULT '',
   reason VARCHAR(255),
   status ENUM('Pending','Approved','Rejected') NOT NULL DEFAULT 'Pending',
   warden_id INT NULL,
+  decided_at DATETIME NULL,
   FOREIGN KEY (student_id) REFERENCES students(student_id),
   FOREIGN KEY (warden_id) REFERENCES users(user_id)
 );

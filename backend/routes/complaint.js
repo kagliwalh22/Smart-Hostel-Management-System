@@ -30,7 +30,7 @@ router.post('/', verifyToken, requireRole('Student'), async (req, res) => {
 router.get('/mine', verifyToken, requireRole('Student'), async (req, res) => {
   try {
     const [rows] = await db.query(
-      `SELECT c.complaint_id, c.category, c.title, c.status, c.created_at, c.resolved_at
+      `SELECT c.complaint_id, c.category, c.title, c.status, DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i') AS created_at, DATE_FORMAT(c.resolved_at, '%Y-%m-%d %H:%i') AS resolved_at
        FROM complaints c JOIN students s ON s.student_id = c.student_id
        WHERE s.user_id = ? ORDER BY c.complaint_id DESC`,
       [req.user.user_id]
@@ -45,7 +45,7 @@ router.get('/mine', verifyToken, requireRole('Student'), async (req, res) => {
 router.get('/', verifyToken, requireRole('Warden'), async (req, res) => {
   try {
     const [rows] = await db.query(
-      `SELECT c.complaint_id, c.student_id, u.name, c.category, c.title, c.description, c.status, c.created_at, c.resolved_at
+      `SELECT c.complaint_id, c.student_id, u.name, c.category, c.title, c.description, c.status, DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i') AS created_at, DATE_FORMAT(c.resolved_at, '%Y-%m-%d %H:%i') AS resolved_at
        FROM complaints c
        JOIN students s ON s.student_id = c.student_id
        JOIN users u ON u.user_id = s.user_id
