@@ -97,6 +97,7 @@ CREATE TABLE attendance (
   student_id VARCHAR(20) NOT NULL,
   att_date DATE NOT NULL,
   status ENUM('Present','Absent') NOT NULL,
+  remark VARCHAR(150) NULL,
   warden_id INT NOT NULL,
   UNIQUE (student_id, att_date),
   FOREIGN KEY (student_id) REFERENCES students(student_id),
