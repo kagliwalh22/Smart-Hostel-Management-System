@@ -10,6 +10,8 @@ const migrationRoutes = require('./routes/migration');
 const complaintRoutes = require('./routes/complaint');
 const outpassRoutes = require('./routes/outpass');
 const attendanceRoutes = require('./routes/attendance');
+const visitorRoutes = require('./routes/visitor');
+const feeRoutes = require('./routes/fee');
 const { verifyToken, requireRole } = require('./middleware/auth');
 
 const app = express();
@@ -25,6 +27,8 @@ app.use('/api/migrations', migrationRoutes);
 app.use('/api/complaints', complaintRoutes);
 app.use('/api/outpasses', outpassRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/visitors', visitorRoutes);
+app.use('/api/fees', feeRoutes);
 app.use('/api', studentRoutes);
 
 app.get('/api/me', verifyToken, (req, res) => res.json(req.user));
