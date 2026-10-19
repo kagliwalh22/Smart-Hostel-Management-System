@@ -15,4 +15,5 @@ Traditional hostel management relies on manual spreadsheets, paper registers and
 - database
 
 ## Author
-Harshil Kagliwal (A6_B1_10)
+Harshil Kagliwal 
+
