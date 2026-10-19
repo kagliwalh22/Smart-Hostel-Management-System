@@ -12,6 +12,9 @@ const outpassRoutes = require('./routes/outpass');
 const attendanceRoutes = require('./routes/attendance');
 const visitorRoutes = require('./routes/visitor');
 const feeRoutes = require('./routes/fee');
+const reportRoutes = require('./routes/report');
+const notifierRoutes = require('./routes/notifier');
+const { startScheduler } = require('./notifier');
 const { verifyToken, requireRole } = require('./middleware/auth');
 
 const app = express();
@@ -29,6 +32,8 @@ app.use('/api/outpasses', outpassRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/visitors', visitorRoutes);
 app.use('/api/fees', feeRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/notifier', notifierRoutes);
 app.use('/api', studentRoutes);
 
 app.get('/api/me', verifyToken, (req, res) => res.json(req.user));
@@ -48,6 +53,7 @@ app.get('/api/rooms', async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT, () =>
-  console.log('Server running on port ' + process.env.PORT)
-);
+app.listen(process.env.PORT, () => {
+  console.log('Server running on port ' + process.env.PORT);
+  startScheduler();
+});

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>SHMS Reports</title>
+  <style>
+    body { font-family: Arial; margin: 0; background: #eef2f7; }
+    header { background: #1565c0; color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; }
+    header a { color: white; }
+    .box { background: white; margin: 20px auto; padding: 20px; border-radius: 10px; max-width: 860px; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+    h3 { margin-top: 0; }
+    .stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+    .stats div { flex: 1; min-width: 120px; background: #f5f7fb; border-radius: 8px; padding: 12px; text-align: center; }
+    .stats b { display: block; font-size: 22px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; }
+    button { background: #1565c0; color: white; border: none; border-radius: 5px; cursor: pointer; padding: 10px 16px; margin-right: 8px; }
+    #msg { margin: 10px auto; max-width: 860px; padding: 0 20px; } .err { color: red; } .ok { color: green; }
+    @media print { header, button, #remBox { display: none; } body { background: white; } .box { box-shadow: none; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div>Admin Reports</div>
+    <a href="dashboard.html">Back to Dashboard</a>
+  </header>
+  <div id="msg"></div>
+  <div class="box">
+    <button onclick="load()">Refresh report</button>
+    <button onclick="window.print()">Print / Save as PDF</button>
+    <span id="gen" style="color:#777;font-size:13px"></span>
+  </div>
+  <div class="box">
+    <h3>1. Room occupancy</h3>
+    <div class="stats" id="occStats"></div>
+    <table id="occ"></table>
+  </div>
+  <div class="box">
+    <h3>2. Complaints</h3>
+    <div class="stats" id="compStats"></div>
+  </div>
+  <div class="box">
+    <h3>3. Fee balances</h3>
+    <div class="stats" id="feeStats"></div>
+    <table id="out"></table>
+  </div>
+  <div class="box" id="remBox">
+    <h3>Fee due-date reminders</h3>
+    <p style="font-size:14px;color:#555">The system sends reminders automatically every day at 9:00 AM for fees due in the next few days. You can also run it now.</p>
+    <button onclick="runReminders()">Send due reminders now</button>
+    <div id="remResult" style="margin-top:12px;font-size:14px"></div>
+  </div>
+  <script>
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!token || !user || user.role !== 'Admin') window.location.href = 'login.html';
+    const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+    const msg = document.getElementById('msg');
+    const stat = (n, label) => '<div><b>' + n + '</b>' + label + '</div>';
+
+    async function load() {
+      const res = await fetch('http://localhost:5000/api/reports/summary', { headers });
+      if (res.status === 401) { localStorage.clear(); window.location.href = 'login.html'; return; }
+      const d = await res.json();
+      if (!res.ok) { msg.className = 'err'; msg.innerText = d.error; return; }
+      msg.innerText = '';
+      document.getElementById('gen').innerText = 'Generated at ' + d.generated_at + ' (UTC)';
+
+      document.getElementById('occStats').innerHTML =
+        stat(d.occupancy_total.occupied + ' / ' + d.occupancy_total.capacity, 'Beds occupied') +
+        stat(d.occupancy_total.vacant, 'Beds vacant') + stat(d.occupancy_total.percent + '%', 'Occupancy') +
+        stat(d.students, 'Registered students') + stat(d.allocated, 'Allocated students');
+      document.getElementById('occ').innerHTML = '<tr><th>Tier</th><th>Rooms</th><th>Capacity</th><th>Occupied</th><th>Vacant</th></tr>' +
+        d.occupancy.map(o => '<tr><td>' + o.tier + '</td><td>' + o.rooms + '</td><td>' + o.capacity + '</td><td>' + o.occupied + '</td><td>' + o.vacant + '</td></tr>').join('');
+
+      document.getElementById('compStats').innerHTML =
+        stat(d.complaints['Open'], 'Open') + stat(d.complaints['In Progress'], 'In Progress') + stat(d.complaints['Resolved'], 'Resolved') +
+        stat(d.avg_resolution_hours === null ? '-' : d.avg_resolution_hours + ' h', 'Avg resolution time');
+
+      document.getElementById('feeStats').innerHTML =
+        stat(d.fees.pending_amount, 'Pending amount (' + d.fees.pending_count + ' records)') +
+        stat(d.fees.paid_amount, 'Collected (' + d.fees.paid_count + ' records)');
+      document.getElementById('out').innerHTML = d.outstanding.length
+        ? '<tr><th>Student</th><th>Outstanding balance</th><th>Earliest due date</th></tr>' +
+          d.outstanding.map(o => '<tr><td>' + o.name + ' (' + o.student_id + ')</td><td>' + o.balance + '</td><td>' + o.next_due + '</td></tr>').join('')
+        : '<tr><td>No outstanding fees</td></tr>';
+    }
+
+    async function runReminders() {
+      const box = document.getElementById('remResult');
+      box.innerText = 'Sending...';
+      const res = await fetch('http://localhost:5000/api/notifier/run', { method: 'POST', headers });
+      const d = await res.json();
+      if (!res.ok) { box.innerHTML = '<span class="err">' + d.error + '</span>'; return; }
+      box.innerHTML = '<p>Checked ' + d.checked + ' fee(s) due in the next ' + d.window_days + ' day(s). Sent: <b>' + d.sent + '</b>, failed: <b>' + d.failed + '</b>.</p>' +
+        d.results.map(r => '<div>' + r.to + ' (due ' + r.due_date + ') ' + (r.error ? '<span class="err">' + r.error + '</span>' : (r.preview ? '<a href="' + r.preview + '" target="_blank">View email</a>' : 'sent')) + '</div>').join('');
+    }
+    load();
+  </script>
+</body>
+</html>
